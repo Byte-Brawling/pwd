@@ -1,0 +1,54 @@
+{
+    "name": "Wake Word Model",
+    "version": "1.0.0",
+    "description": "A simple wake word detection model",
+    "keywords": [
+        "hey",
+        "assistant"
+    ],
+    "threshold": 0.8,
+    "audioConfig": {
+        "sampleRate": 16000,
+        "frameSize": 512,
+        "hopSize": 160
+    },
+    "modelArchitecture": {
+        "type": "CNN",
+        "layers": [
+            {
+                "type": "conv1d",
+                "filters": 64,
+                "kernelSize": 3,
+                "activation": "relu"
+            },
+            {
+                "type": "maxPooling1d",
+                "poolSize": 2
+            },
+            {
+                "type": "conv1d",
+                "filters": 32,
+                "kernelSize": 3,
+                "activation": "relu"
+            },
+            {
+                "type": "maxPooling1d",
+                "poolSize": 2
+            },
+            {
+                "type": "flatten"
+            },
+            {
+                "type": "dense",
+                "units": 64,
+                "activation": "relu"
+            },
+            {
+                "type": "dense",
+                "units": 1,
+                "activation": "sigmoid"
+            }
+        ]
+    },
+    "weights": "wake-word-model-weights.bin"
+}
