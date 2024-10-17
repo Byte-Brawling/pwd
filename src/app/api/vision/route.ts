@@ -1,29 +1,63 @@
-// src/app/api/vision/route.ts
+// File: app/api/vision/route.ts
+
 import { NextRequest, NextResponse } from 'next/server';
-import { HfInference } from '@huggingface/inference';
+import { ComputerVisionClient } from '@azure/cognitiveservices-computervision';
+import { ApiKeyCredentials } from '@azure/ms-rest-js';
 
-const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
+const VISION_KEY = process.env.AZURE_VISION_KEY as string;
+const VISION_ENDPOINT = process.env.AZURE_VISION_ENDPOINT as string;
 
-export async function POST(req: NextRequest) {
+interface VisionRequest {
+    imageUrl: string;
+}
+
+interface VisionResponse {
+    description: string;
+    tags: string[];
+    objects: string[];
+}
+
+interface ErrorResponse {
+    error: string;
+}
+
+/**
+ * Handles POST requests for image analysis
+ * @param request - The incoming request containing the image URL to be analyzed
+ * @returns A Promise resolving to a NextResponse with the analysis results or error
+ */
+export async function POST(request: NextRequest): Promise<NextResponse<VisionResponse | ErrorResponse>> {
+    if (!VISION_KEY || !VISION_ENDPOINT) {
+        return NextResponse.json({ error: 'Vision service configuration is missing' }, { status: 500 });
+    }
+
     try {
-        const formData = await req.formData();
-        const imageFile = formData.get('image') as File;
+        const { imageUrl }: VisionRequest = await request.json();
 
-        if (!imageFile) {
-            return NextResponse.json({ error: 'No image file provided' }, { status: 400 });
+        if (!imageUrl) {
+            return NextResponse.json({ error: 'No image URL provided' }, { status: 400 });
         }
 
-        const arrayBuffer = await imageFile.arrayBuffer();
-        const imageData = new Uint8Array(arrayBuffer);
+        const client = new ComputerVisionClient(
+            new ApiKeyCredentials({ inHeader: { 'Ocp-Apim-Subscription-Key': VISION_KEY } }),
+            VISION_ENDPOINT
+        );
 
-        const result = await hf.imageClassification({
-            model: 'google/vit-base-patch16-224',
-            data: imageData,
-        });
+        const [describeResult, tagsResult, objectsResult] = await Promise.all([
+            client.describeImage(imageUrl),
+            client.tagImage(imageUrl),
+            client.detectObjects(imageUrl)
+        ]);
 
-        return NextResponse.json({ result });
+        const response: VisionResponse = {
+            description: describeResult.captions[0]?.text || 'No description available',
+            tags: tagsResult.tags.map(tag => tag.name),
+            objects: objectsResult.objects.map(obj => obj.object)
+        };
+
+        return NextResponse.json(response);
     } catch (error) {
-        console.error('Error in Vision:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        console.error('Error in vision route:', error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

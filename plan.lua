@@ -1,78 +1,73 @@
-voicey-app/
-├── src/
-│   ├── app/
-│   │   ├── api/
-│   │   │   ├── stt/
-│   │   │   │   └── route.ts
-│   │   │   ├── tts/
-│   │   │   │   └── route.ts
-│   │   │   ├── vision/
-│   │   │   │   └── route.ts
-│   │   │   └── nlu/
-│   │   │       └── route.ts
-│   │   ├── (auth)/   -- maybe later
-│   │   │   ├── login/
-│   │   │   │   └── page.tsx
-│   │   │   └── register/
-│   │   │       └── page.tsx
-│   │   ├── dashboard/ -- maybe later
-│   │   │   └── page.tsx
-│   │   ├── settings/ -- maybe later
-│   │   │   └── page.tsx
-│   │   ├── layout.tsx
-│   │   └── page.tsx
+hack4pwd-ai-extension/
+├── app/
+│   ├── api/
+│   │   ├── speech-to-text/
+│   │   │   └── route.ts
+│   │   ├── natural-language-understanding/
+│   │   │   └── route.ts
+│   │   ├── text-to-speech/
+│   │   │   └── route.ts
+│   │   ├── vision/
+│   │   │   └── route.ts
+│   │   └── user/
+│   │       ├── settings/
+│   │       │   └── route.ts
+│   │       └── profile/
+│   │           └── route.ts
 │   ├── components/
-│   │   ├── ui/
-│   │   │   ├── Button.tsx
-│   │   │   ├── Input.tsx
-│   │   │   └── Modal.tsx
-│   │   ├── VoiceAssistant.tsx
-│   │   ├── WakeWordDetector.tsx
-│   │   └── WebPageAnalyzer.tsx
-│   ├── hooks/
-│   │   ├── useAzureSpeech.ts
-│   │   ├── useAzureVision.ts
-│   │   └── useWebSockets.ts
-│   ├── lib/
-│   │   ├── azure/
-│   │   │   ├── speechClient.ts
-│   │   │   └── visionClient.ts
-│   │   ├── prisma.ts
-│   │   └── openai.ts
-│   ├── utils/
-│   │   ├── audio.ts
-│   │   ├── domManipulation.ts
-│   │   └── imageProcessing.ts
-│   └── types/
-│       └── index.d.ts
-├── public/
+│   │   ├── Header.tsx
+│   │   ├── Footer.tsx
+│   │   ├── AccessibilityControls.tsx
+│   │   ├── SettingsForm.tsx
+│   │   └── AdminDashboard/
+│   │       ├── UserList.tsx
+│   │       ├── AnalyticsChart.tsx
+│   │       └── ModelPerformance.tsx
 │   ├── models/
-│   │   └── wake-word-model.json
-│   └── fonts/
+│   │   ├── speechToText.ts
+│   │   ├── naturalLanguageUnderstanding.ts
+│   │   ├── textToSpeech.ts
+│   │   └── vision.ts
+│   ├── utils/
+│   │   ├── azureConfig.ts
+│   │   ├── helperFunctions.ts
+│   │   └── auth.ts
+│   ├── (auth)/
+│   │   ├── login/
+│   │   │   └── page.tsx
+│   │   └── register/
+│   │       └── page.tsx
+│   ├── dashboard/
+│   │   └── page.tsx
+│   ├── settings/
+│   │   └── page.tsx
+│   ├── admin/
+│   │   └── page.tsx
+│   ├── layout.tsx
+│   └── page.tsx
 ├── prisma/
-│   └── schema.prisma
-├── tests/
-│   ├── unit/
-│   └── integration/
+│   ├── schema.prisma
+│   └── migrations/
 ├── extension/
-│   ├── src/
-│   │   ├── content-scripts/
-│   │   │   └── index.ts
-│   │   ├── background/
-│   │   │   └── index.ts
-│   │   └── popup/
-│   │       ├── index.html
-│   │       └── index.ts
-│   ├── public/
-│   │   ├── manifest.json
-│   │   └── icons/
-│   └── webpack.config.js
-├── scripts/
-│   └── build-extension.js
+│   ├── manifest.json
+│   ├── background.js
+│   ├── content.js
+│   └── popup/
+│       ├── popup.html
+│       ├── popup.js
+│       └── popup.css
+├── public/
+│   ├── icons/
+│   │   ├── icon16.png
+│   │   ├── icon48.png
+│   │   └── icon128.png
+│   └── assets/
+├── styles/
+│   └── globals.css
+├── lib/
+│   └── prisma.ts
 ├── .env
-├── .env.example
-├── .eslintrc.json
-├── .prettierrc
+├── .env.local
 ├── next.config.js
 ├── package.json
 ├── tsconfig.json

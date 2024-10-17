@@ -1,34 +1,28 @@
-// src/app/page.tsx
-"use client";
-
-import React, { useState } from "react";
-import VoiceAssistant from "@/components/VoiceAssistant";
-import WakeWordDetector from "@/components/WakeWordDetector";
-import WebPageAnalyzer from "@/components/WebPageAnalyzer";
+import React from "react";
+import Link from "next/link";
 
 export default function Home() {
-  const [activeComponent, setActiveComponent] = useState<
-    "wake" | "voice" | "web"
-  >("wake");
-
-  const handleWakeWordDetected = () => {
-    setActiveComponent("voice");
-  };
-
   return (
-    <div className='flex flex-col items-center justify-center min-h-screen bg-gray-100'>
-      {activeComponent === "wake" && (
-        <WakeWordDetector onWakeWordDetected={handleWakeWordDetected} />
-      )}
-      {activeComponent === "voice" && <VoiceAssistant />}
-      {activeComponent === "web" && <WebPageAnalyzer />}
-      <div className='mt-8'>
-        <button
-          onClick={() => setActiveComponent("web")}
-          className='bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded'
+    <div className='text-center min-h-lvh'>
+      <h1 className='text-4xl font-bold mb-4'>
+        Welcome to AI-Powered Accessibility
+      </h1>
+      <p className='mb-8'>
+        Enhance your web browsing experience with our AI tools.
+      </p>
+      <div className='space-x-4'>
+        <Link
+          href='/speech'
+          className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded'
         >
-          Switch to Web Page Analyzer
-        </button>
+          Speech Tools
+        </Link>
+        <Link
+          href='/vision'
+          className='bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded'
+        >
+          Vision Tools
+        </Link>
       </div>
     </div>
   );
