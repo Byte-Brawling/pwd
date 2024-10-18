@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Conversation Assistant</title>
+    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
+     <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="bg-gray-100 p-6">
+    <div class="container mx-auto max-w-md bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl">
+        <div class="md:flex">
+            <div class="p-8">
+                <div class="uppercase tracking-wide text-sm text-indigo-500 font-semibold">AI Conversation Assistant
+                </div>
+                <p class="mt-2 text-gray-500">Speak with AI using your voice</p>
+                <div class="mt-4">
+                    <button id="startRecord"
+                        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        Start Recording
+                    </button>
+                    <button id="stopRecord"
+                        class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded ml-2" disabled>
+                        Stop Recording
+                    </button>
+                </div>
+                <div id="status" class="mt-4 text-gray-600 italic"></div>
+                <div id="transcription" class="mt-4 p-4 bg-gray-100 rounded-md hidden">
+                    <h3 class="font-bold text-lg mb-2">Transcription:</h3>
+                    <p id="transcriptionText"></p>
+                </div>
+                <div id="response" class="mt-4 p-4 bg-blue-100 rounded-md hidden">
+                    <h3 class="font-bold text-lg mb-2">AI Response:</h3>
+                    <p id="responseText"></p>
+                </div>
+                <div class="mt-4">
+                    <label for="voiceSelect" class="block text-sm font-medium text-gray-700">Select Voice:</label>
+                    <select id="voiceSelect"
+                        class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                        <option value="alloy">Alloy</option>
+                        <option value="echo">Echo</option>
+                        <option value="fable">Fable</option>
+                        <option value="onyx">Onyx</option>
+                        <option value="nova">Nova</option>
+                        <option value="shimmer">Shimmer</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="popup.js"></script>
+</body>
+
+</html>
