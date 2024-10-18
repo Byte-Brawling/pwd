@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 router = APIRouter()
 
 
-@router.post("/conversation")
+@router.post("/ai")
 async def process_conversation(
     request: Request,
     audio: UploadFile = File(...),

@@ -3,10 +3,6 @@ import React from "react";
 import { Smile, Paperclip, Mic } from "lucide-react";
 import Image from "next/image";
 
-interface ChatInterfaceProps{
-    selectedChat: {
-}
-
 
 const ChatInterface = ({ selectedChat }) => {
   if (!selectedChat) {

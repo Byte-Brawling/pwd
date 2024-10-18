@@ -1,14 +1,25 @@
 # === File: server/main.py ===
+from contextlib import asynccontextmanager
 import os
 from fastapi import FastAPI
 from openai import AzureOpenAI
 from dotenv import load_dotenv
-from routes import conversation
+from routes import conversation, conversations, message, user_route
 from starlette.middleware.cors import CORSMiddleware
+from database.db import database
 
 load_dotenv()  # Load environment variables
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Initializing database...")
+    await database.init_db()
+    print("Database initialized")
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 # Initialize Azure OpenAI clients
 s_client = AzureOpenAI(
@@ -35,6 +46,9 @@ app.state.t_openai_client = t_client
 
 # Include conversation router
 app.include_router(conversation.router)
+app.include_router(user_route.router)
+app.include_router(message.router)
+app.include_router(conversations.router)
 
 app.add_middleware(
     CORSMiddleware,
