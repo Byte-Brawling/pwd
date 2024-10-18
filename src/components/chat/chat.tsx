@@ -1,10 +1,92 @@
 "use client";
-import React from "react";
-import { Smile, Paperclip, Mic } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Mic, StopCircle } from "lucide-react";
 import Image from "next/image";
 
-
 const ChatInterface = ({ selectedChat }) => {
+  const [messages, setMessages] = useState([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const audioRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const chunksRef = useRef([]);
+
+  const conversationId = "6712789988a714d95945581e";
+  const userId = "67126ec511248e1d11c42a8b";
+
+  const startRecording = () => {
+    navigator.mediaDevices
+      .getUserMedia({ audio: true })
+      .then((stream) => {
+        mediaRecorderRef.current = new MediaRecorder(stream);
+        mediaRecorderRef.current.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            chunksRef.current.push(e.data);
+          }
+        };
+        mediaRecorderRef.current.start();
+        setIsRecording(true);
+      })
+      .catch((error) => console.error("Error accessing microphone:", error));
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      mediaRecorderRef.current.onstop = () => {
+        sendAudioToBackend();
+      };
+    }
+  };
+
+  const sendAudioToBackend = async () => {
+    const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
+    chunksRef.current = [];
+
+    const formData = new FormData();
+    formData.append("audio", audioBlob, "recording.webm");
+    formData.append("from_user", userId);
+    formData.append("conversation_id", conversationId);
+
+    try {
+      const response = await fetch("http://localhost:8000/messages-ai", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        {
+          type: "human",
+          text: data.human_transcribed_text,
+          audioUrl: data.human_audio_url,
+        },
+        {
+          type: "ai",
+          text: data.ai_text_response,
+          audioUrl: data.ai_audio_url,
+        },
+      ]);
+
+      // Play AI response
+      if (audioRef.current) {
+        audioRef.current.src = data.ai_audio_url;
+        audioRef.current.play();
+      }
+    } catch (error) {
+      console.error("Error sending audio:", error);
+    }
+  };
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  };
+
   if (!selectedChat) {
     return (
       <div className='flex items-center justify-center h-screen bg-gray-900 text-white'>
@@ -31,41 +113,37 @@ const ChatInterface = ({ selectedChat }) => {
       </div>
 
       {/* Chat Messages */}
-      <div className='flex-grow overflow-y-auto p-4'>
-        {/* You would map through messages here */}
-        <div className='mb-4'>
-          <p className='bg-gray-800 p-2 rounded-lg inline-block max-w-xs'>
-            Eeeh...kuna nini?
-          </p>
-        </div>
-        <div className='mb-4 text-right'>
-          <p className='bg-green-700 p-2 rounded-lg inline-block max-w-xs'>
-            so like nikiweka hoz details kwa service fulani, itakata straight
-            from mpesa ama inawork aje
-          </p>
-        </div>
-        {/* Add more messages as needed */}
+      <div className='flex-grow overflow-y-auto p-8'>
+        {messages.map((message, index) => (
+          <div
+            key={index}
+            className={`mb-4 ${message.type === "human" ? "text-right" : ""}`}
+          >
+            <p
+              className={`p-2 rounded-lg inline-block max-w-xl ${
+                message.type === "human" ? "bg-green-700" : "bg-gray-800"
+              }`}
+            >
+              {message.text}
+            </p>
+          </div>
+        ))}
       </div>
 
-      {/* Chat Input */}
-      <div className='p-4 border-t border-gray-700'>
-        <div className='flex items-center bg-gray-800 rounded-full'>
-          <button className='p-2 text-gray-400 hover:text-white'>
-            <Smile size={24} />
-          </button>
-          <input
-            type='text'
-            placeholder='Type a message'
-            className='flex-grow bg-transparent border-none focus:outline-none px-4 py-2 text-white'
-          />
-          <button className='p-2 text-gray-400 hover:text-white'>
-            <Paperclip size={24} />
-          </button>
-          <button className='p-2 text-gray-400 hover:text-white'>
-            <Mic size={24} />
-          </button>
-        </div>
+      {/* Voice Input */}
+      <div className='p-4 border-t border-gray-700 flex justify-center'>
+        <button
+          onClick={toggleRecording}
+          className={`p-4 rounded-full ${
+            isRecording ? "bg-red-600" : "bg-green-600"
+          } hover:opacity-80 transition-opacity`}
+        >
+          {isRecording ? <StopCircle size={40} /> : <Mic size={40} />}
+        </button>
       </div>
+
+      {/* Hidden audio element for AI response playback */}
+      <audio ref={audioRef} className='hidden' />
     </div>
   );
 };

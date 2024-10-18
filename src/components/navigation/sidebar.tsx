@@ -6,7 +6,7 @@ import ChatSidebar from "../chat/chatSidebar";
 import AIChatSidebar from "../chat/aiChatSidebar";
 
 const Sidebar = ({ userAvatar, onChatSelect, onAIChatSelect }) => {
-  const [activeMenu, setActiveMenu] = useState("chats");
+  const [activeMenu, setActiveMenu] = useState("ai");
 
   const toggleMenu = (menu) => {
     setActiveMenu(menu);
@@ -16,6 +16,17 @@ const Sidebar = ({ userAvatar, onChatSelect, onAIChatSelect }) => {
     <div className='flex h-screen'>
       <div className='w-16 bg-gray-900 flex flex-col items-center py-4'>
         <nav className='flex-1 space-y-8'>
+          <button
+            onClick={() => toggleMenu("ai")}
+            className='flex justify-center w-full'
+          >
+            <Bot
+              size={24}
+              className={`${
+                activeMenu === "ai" ? "text-white" : "text-gray-400"
+              } hover:text-white transition-colors`}
+            />
+          </button>
           <button
             onClick={() => toggleMenu("chats")}
             className='flex justify-center w-full'
@@ -51,18 +62,6 @@ const Sidebar = ({ userAvatar, onChatSelect, onAIChatSelect }) => {
               size={24}
               className={`${
                 activeMenu === "calls" ? "text-white" : "text-gray-400"
-              } hover:text-white transition-colors`}
-            />
-          </button>
-          {/* New AI Button */}
-          <button
-            onClick={() => toggleMenu("ai")}
-            className='flex justify-center w-full'
-          >
-            <Bot
-              size={24}
-              className={`${
-                activeMenu === "ai" ? "text-white" : "text-gray-400"
               } hover:text-white transition-colors`}
             />
           </button>
