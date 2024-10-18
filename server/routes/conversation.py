@@ -1,47 +1,17 @@
+# === File: server/routes/conversation.py ===
 import base64
-import os
 import tempfile
 from fastapi import APIRouter, HTTPException, Request, UploadFile, File
-from fastapi.responses import JSONResponse, Response
-from pydantic import BaseModel
-from enum import Enum
-import io
+from fastapi.responses import JSONResponse
+
 
 router = APIRouter()
-
-
-# class Voice(str, Enum):
-#     NOVA = "nova"
-#     SHIMMER = "shimmer"
-#     ECHO = "echo"
-#     ONYX = "onyx"
-#     FABLE = "fable"
-#     ALLOY = "alloy"
-
-
-# class ConversationRequest(BaseModel):
-#     voice: Voice = Voice.ALLOY
-
-
-# SUPPORTED_AUDIO_FORMATS = [
-#     "flac",
-#     "m4a",
-#     "mp3",
-#     "mp4",
-#     "mpeg",
-#     "mpga",
-#     "oga",
-#     "ogg",
-#     "wav",
-#     "webm",
-# ]
 
 
 @router.post("/conversation")
 async def process_conversation(
     request: Request,
     audio: UploadFile = File(...),
-    # params: ConversationRequest = ConversationRequest(),
 ):
     openai_tts_client = request.app.state.v_openai_client
     openai_stt_client = request.app.state.s_openai_client
@@ -51,14 +21,6 @@ async def process_conversation(
         # Print information about the uploaded file
         print(f"Uploaded file: {audio.filename}")
         print(f"Content type: {audio.content_type}")
-
-        # # Check if the file format is supported
-        # file_extension = os.path.splitext(audio.filename)[1][1:].lower()
-        # if file_extension not in SUPPORTED_AUDIO_FORMATS:
-        #     raise HTTPException(
-        #         status_code=400,
-        #         detail=f"Unsupported file format. Supported formats are: {', '.join(SUPPORTED_AUDIO_FORMATS)}",
-        #     )
 
         # Step 1: Speech-to-Text
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_audio:

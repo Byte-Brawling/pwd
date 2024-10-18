@@ -1,8 +1,23 @@
-browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
+/* File: client/background.js */
+const browserAPI =
+  typeof chrome !== "undefined"
+    ? chrome
+    : typeof browser !== "undefined"
+    ? browser
+    : null;
+
+if (browserAPI && browserAPI.runtime) {
+  browserAPI.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "playAudio") {
-        playAudio(request.audioData);
+      playAudio(request.audioData);
     }
-});
+  });
+} else {
+  console.warn("Background script: Browser extension API not available.");
+}
+
+browserAPI.tts.speak("hello world")
+browserAPI.tts.stop()   
 
 function playAudio(audioData) {
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -26,3 +41,4 @@ function base64ToArrayBuffer(base64) {
     }
     return bytes.buffer;
 }
+
