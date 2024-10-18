@@ -8,6 +8,10 @@
 
 .env
 
+**/__pycache__/
+*.pyc
+
+
 # testing
 /coverage
 

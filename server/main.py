@@ -38,7 +38,7 @@ app.include_router(conversation.router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Ideally, specify your extension's origin
+    allow_origins=["*"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
