@@ -1,6 +1,6 @@
 # Voice Chat Application
 
-[![Video Demo](/pitch.mp4)](/pitch.mp4)
+[![Video Demo](/pitch.png)](/pitch.mp4)
 
 *Click the image above to watch a demo of the Voice Chat Application*
 
