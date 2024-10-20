@@ -45,6 +45,13 @@ def get_file_url(request: Request, file_id: str):
     return str(request.url_for("get_audio", file_id=file_id))
 
 
+def estimate_audio_duration(file_size_bytes, bitrate_kbps=128):
+    bits_per_second = bitrate_kbps * 1000
+    total_bits = file_size_bytes * 8
+    estimated_seconds = total_bits / bits_per_second
+    return round(estimated_seconds, 2)
+
+
 @router.post("/messages")
 async def create_message(
     request: Request,
@@ -125,8 +132,8 @@ async def create_message(
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 
-@router.post("/messages-ai")
-async def create_ai_message(
+@router.post("/transcribe")
+async def transcribe_audio(
     request: Request,
     conversation_id: str = Form(...),
     from_user: str = Form(...),
@@ -174,13 +181,50 @@ async def create_ai_message(
 
         # Clean up: delete the temporary file
         os.remove(temp_audio_path)
+        
+        # Step 3: Create the human message in the database
+        human_message = Message(
+            conversation_id=conversation_id,
+            sender_id=from_user,
+            is_ai_message=False,
+            content=MessageContent(
+                transcription=transcribed_text,
+                audio_url=audio_url,
+                duration=estimate_audio_duration(len(audio_content)),
+            ),
+        )
+        await human_message.insert()
+        print(f"Human message created. Message ID: {human_message.id}")
 
-        # Step 3: Send transcribed text to AI model for response
+        response_data = {
+            "message_id": str(human_message.id),
+            "transcribed_text": transcribed_text,
+            "audio_url": audio_url,
+        }
+        
+        conversation.last_message_at = datetime.utcnow()
+        await conversation.save()
+
+        return JSONResponse(response_data)
+
+    except Exception as e:
+        print(f"Error in transcribe_audio: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
+@router.post("/ai-response")
+async def generate_ai_response(request: Request, data: dict):
+    try:
+        conversation_id = data['conversation_id']
+        from_user = data['from_user']
+        transcribed_text = data['transcribed_text']
+        
+        # Step 1: Send transcribed text to AI model for response
         nlu_prompt = f"""Analyze the following text and provide a brief, natural-sounding response:
         User said: "{transcribed_text}"
         Consider the context, sentiment, and any implicit questions or requests.
         Provide a response that addresses the user's input in a conversational manner.
         Keep the response concise and suitable for text-to-speech conversion.
+        Do not start any of your responses with the word Response. Just go ahead and provide the response.
         """
 
         try:
@@ -201,10 +245,10 @@ async def create_ai_message(
             print(f"AI response generation failed: {str(e)}")
             raise HTTPException(status_code=500, detail="AI response generation failed")
 
-        # Step 4: Convert AI text response to speech
+        # Step 2: Convert AI text response to speech
         try:
             audio_response = openai_tts_client.audio.speech.create(
-                model="tts", voice="alloy", input=ai_text_response
+                model="tts-hd", voice="nova", input=ai_text_response
             )
             print("Text-to-speech conversion successful")
         except Exception as e:
@@ -213,30 +257,17 @@ async def create_ai_message(
                 status_code=500, detail="Text-to-speech conversion failed"
             )
 
-        # Step 5: Save AI audio response to GridFS
+        # Step 3: Save AI audio response to GridFS
         ai_audio_filename = f"ai_response_{datetime.utcnow().timestamp()}.mp3"
         ai_file_id = await upload_to_gridfs(audio_response.content, ai_audio_filename)
         ai_audio_url = get_file_url(request, ai_file_id)
 
-        # Calculate audio duration (this is a placeholder - replace with actual duration calculation)
-        human_audio_duration = 0.0  # Replace with actual duration calculation
-        ai_audio_duration = 0.0  # Replace with actual duration calculation
+        print(f"AI audio saved. Access URL: {ai_audio_url}")
 
-        # Step 6: Create the human message in the database
-        human_message = Message(
-            conversation_id=conversation_id,
-            sender_id=from_user,
-            is_ai_message=False,
-            content=MessageContent(
-                transcription=transcribed_text,
-                audio_url=audio_url,
-                duration=human_audio_duration,
-            ),
-        )
-        await human_message.insert()
-        print(f"Human message created. Message ID: {human_message.id}")
-
-        # Step 7: Create the AI message in the database
+        # Step 4: Estimate audio duration
+        ai_audio_duration = estimate_audio_duration(len(audio_response.content))
+        
+        # Step 5: Create the AI message in the database
         ai_message = Message(
             conversation_id=conversation_id,
             sender_id="AI",
@@ -250,27 +281,164 @@ async def create_ai_message(
         await ai_message.insert()
         print(f"AI message created. Message ID: {ai_message.id}")
 
-        # Update conversation's last_message_at
-        conversation.last_message_at = datetime.utcnow()
-        await conversation.save()
-
         response_data = {
-            "human_message_id": str(human_message.id),
             "ai_message_id": str(ai_message.id),
-            "human_transcribed_text": transcribed_text,
-            "human_audio_url": audio_url,
             "ai_text_response": ai_text_response,
             "ai_audio_url": ai_audio_url,
         }
 
         return JSONResponse(response_data)
-
-    except HTTPException as he:
-        # Re-raise HTTP exceptions
-        raise he
+    
     except Exception as e:
         print(f"Unexpected error in create_ai_message: {str(e)}")
         raise HTTPException(status_code=500, detail="An unexpected error occurred")
+
+# @router.post("/messages-ai")
+# async def create_ai_message(
+#     request: Request,
+#     conversation_id: str = Form(...),
+#     from_user: str = Form(...),
+#     audio: UploadFile = File(...),
+# ):
+#     try:
+#         # Check if conversation exists
+#         conversation = await Conversation.get(conversation_id)
+#         if not conversation:
+#             raise HTTPException(status_code=404, detail="Conversation not found")
+
+#         # Validate participant
+#         participants = [p.user_id for p in conversation.participants]
+#         if from_user not in participants:
+#             raise HTTPException(
+#                 status_code=400,
+#                 detail="Sender is not a participant in this conversation",
+#             )
+
+#         # Step 1: Upload audio to GridFS
+#         audio_content = await audio.read()
+#         audio_filename = f"{datetime.utcnow().timestamp()}_{audio.filename}"
+#         file_id = await upload_to_gridfs(audio_content, audio_filename)
+#         audio_url = get_file_url(request, file_id)
+
+#         print(f"Audio uploaded. Access URL: {audio_url}")
+
+#         # Step 2: Transcribe using Whisper
+#         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_audio:
+#             temp_audio.write(audio_content)
+#             temp_audio_path = temp_audio.name
+
+#         print("Transcription process started...")
+
+#         try:
+#             with open(temp_audio_path, "rb") as audio_file:
+#                 transcript = openai_stt_client.audio.transcriptions.create(
+#                     model="whisper", file=audio_file, response_format="text"
+#                 )
+#             print(f"Transcription successful! Transcript: {transcript}")
+#             transcribed_text = transcript
+#         except Exception as e:
+#             print(f"Transcription failed: {str(e)}")
+#             raise HTTPException(status_code=500, detail="Transcription failed")
+
+#         # Clean up: delete the temporary file
+#         os.remove(temp_audio_path)
+
+#         # Step 3: Send transcribed text to AI model for response
+#         nlu_prompt = f"""Analyze the following text and provide a brief, natural-sounding response:
+#         User said: "{transcribed_text}"
+#         Consider the context, sentiment, and any implicit questions or requests.
+#         Provide a response that addresses the user's input in a conversational manner.
+#         Keep the response concise and suitable for text-to-speech conversion.
+#         """
+
+#         try:
+#             nlu_response = openai_ttt_client.chat.completions.create(
+#                 model="gpt-35-turbo-16k",  # Ensure this matches your deployment name
+#                 messages=[
+#                     {
+#                         "role": "system",
+#                         "content": "You are an AI assistant engaged in a conversation. Provide helpful and concise responses.",
+#                     },
+#                     {"role": "user", "content": nlu_prompt},
+#                 ],
+#                 temperature=0.3,
+#             )
+#             ai_text_response = nlu_response.choices[0].message.content.strip()
+#             print(f"AI response generated: {ai_text_response}")
+#         except Exception as e:
+#             print(f"AI response generation failed: {str(e)}")
+#             raise HTTPException(status_code=500, detail="AI response generation failed")
+
+#         # Step 4: Convert AI text response to speech
+#         try:
+#             audio_response = openai_tts_client.audio.speech.create(
+#                 model="tts", voice="shimmer", input=ai_text_response
+#             )
+#             print("Text-to-speech conversion successful")
+#         except Exception as e:
+#             print(f"Text-to-speech conversion failed: {str(e)}")
+#             raise HTTPException(
+#                 status_code=500, detail="Text-to-speech conversion failed"
+#             )
+
+#         # Step 5: Save AI audio response to GridFS
+#         ai_audio_filename = f"ai_response_{datetime.utcnow().timestamp()}.mp3"
+#         ai_file_id = await upload_to_gridfs(audio_response.content, ai_audio_filename)
+#         ai_audio_url = get_file_url(request, ai_file_id)
+
+#         # Calculate audio duration (this is a placeholder - replace with actual duration calculation)
+#         human_audio_duration = 0.0  # Replace with actual duration calculation
+#         ai_audio_duration = 0.0  # Replace with actual duration calculation
+
+#         # Step 6: Create the human message in the database
+#         human_message = Message(
+#             conversation_id=conversation_id,
+#             sender_id=from_user,
+#             is_ai_message=False,
+#             content=MessageContent(
+#                 transcription=transcribed_text,
+#                 audio_url=audio_url,
+#                 duration=human_audio_duration,
+#             ),
+#         )
+#         await human_message.insert()
+#         print(f"Human message created. Message ID: {human_message.id}")
+
+#         # Step 7: Create the AI message in the database
+#         ai_message = Message(
+#             conversation_id=conversation_id,
+#             sender_id="AI",
+#             is_ai_message=True,
+#             content=MessageContent(
+#                 transcription=ai_text_response,
+#                 audio_url=ai_audio_url,
+#                 duration=ai_audio_duration,
+#             ),
+#         )
+#         await ai_message.insert()
+#         print(f"AI message created. Message ID: {ai_message.id}")
+
+#         # Update conversation's last_message_at
+#         conversation.last_message_at = datetime.utcnow()
+#         await conversation.save()
+
+#         response_data = {
+#             "human_message_id": str(human_message.id),
+#             "ai_message_id": str(ai_message.id),
+#             "human_transcribed_text": transcribed_text,
+#             "human_audio_url": audio_url,
+#             "ai_text_response": ai_text_response,
+#             "ai_audio_url": ai_audio_url,
+#         }
+
+#         return JSONResponse(response_data)
+
+#     except HTTPException as he:
+#         # Re-raise HTTP exceptions
+#         raise he
+#     except Exception as e:
+#         print(f"Unexpected error in create_ai_message: {str(e)}")
+#         raise HTTPException(status_code=500, detail="An unexpected error occurred")
 
 
 @router.get("/audio/{file_id}")

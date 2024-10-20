@@ -13,7 +13,7 @@ const Sidebar = ({ userAvatar, onChatSelect, onAIChatSelect }) => {
   };
 
   return (
-    <div className='flex h-screen'>
+    <div className='flex h-screen border-r-2'>
       <div className='w-16 bg-gray-900 flex flex-col items-center py-4'>
         <nav className='flex-1 space-y-8'>
           <button

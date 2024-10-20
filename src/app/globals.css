@@ -11,6 +11,11 @@ body {
     text-wrap: balance;
   }
 }
+@layer components {
+  .chat-bg  {
+    background-image: url("https: //github.com/koolkishan/nextjs-whatsapp-clone-starter/blob/main/client/public/chat-bg.png");
+  }
+}
 
 @layer base {
   :root {

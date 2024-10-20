@@ -1,6 +1,6 @@
 # Voice Chat Application
 
-[![Video Demo](/pitch.png)](/pitch.mp4)
+[![Video Demo](/pitch.png)](https://drive.google.com/file/d/19uqv9BgjwAVa5m6PfLrwL1-99eQL4fYX/view?usp=sharing)
 
 *Click the image above to watch a demo of the Voice Chat Application*
 
