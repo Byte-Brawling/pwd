@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import Providers from "@/lib/providers";
-import { createUser } from "@/lib/api";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -23,7 +22,6 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  createUser()
   return (
     <html lang='en'>
       <body
